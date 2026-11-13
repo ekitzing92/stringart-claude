@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Environnement et outils
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Livrables produits par la commande : ils se recalculent
+sortie/
+sorties/
+
+# Éditeurs / OS
+.vscode/
+.idea/
+.DS_Store
