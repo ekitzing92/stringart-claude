@@ -37,6 +37,7 @@ def preparer_cible(
     cote: int,
     *,
     contraste: str = "local",
+    relief: float = 0.02,
     gamma: float = 1.0,
     noir: float = 0.3,
     zoom: float = 1.0,
@@ -50,6 +51,9 @@ def preparer_cible(
       occuper toute la plage du blanc au noir ; `"local"` ajoute une égalisation adaptative
       (CLAHE), qui fait ressortir le relief dans les zones uniformément claires ou sombres.
       C'est le défaut : sur une photo, c'est ce qui fait apparaître les traits d'un visage.
+    - `relief` : force du contraste local, de 0 (aucun effet) à 0,05 environ. Il n'y a pas de
+      valeur universelle : un visage lisse en demande beaucoup (0,03), une photo déjà chargée
+      de textures — pelage, feuillage — très peu (0,01), sans quoi tout devient détail.
     - `gamma` > 1 assombrit les tons moyens (plus de fil), < 1 les éclaircit.
     - `noir` : valeur demandée pour le noir de l'image, entre 0 et 1. Les tons sont comprimés
       dans `[noir, 1]`. Un noir profond coûte des dizaines de passages par pixel, qui voilent
@@ -66,6 +70,8 @@ def preparer_cible(
         raise ValueError("zoom et gamma doivent être strictement positifs")
     if not 0.0 <= noir < 1.0:
         raise ValueError("noir doit être dans [0, 1[")
+    if not 0.0 <= relief <= 1.0:
+        raise ValueError("relief doit être dans [0, 1]")
 
     hauteur, largeur = image.shape
     petit = min(hauteur, largeur)
@@ -101,10 +107,10 @@ def preparer_cible(
         bas, haut = np.percentile(luminance[disque], [1.0, 99.0])
         if haut - bas > 1e-3:
             luminance = np.clip((luminance - bas) / (haut - bas), 0.0, 1.0)
-    if contraste == "local":
+    if contraste == "local" and relief > 0:
         from skimage.exposure import equalize_adapthist
 
-        luminance = equalize_adapthist(luminance, clip_limit=0.03).astype(np.float32)
+        luminance = equalize_adapthist(luminance, clip_limit=relief).astype(np.float32)
     if gamma != 1.0:
         luminance = luminance**gamma
     luminance = noir + (1.0 - noir) * luminance

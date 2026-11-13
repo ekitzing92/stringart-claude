@@ -51,9 +51,11 @@ def test_preparer_cible():
     etire = preparer_cible(degrade, 40, contraste="auto", noir=0.0)
     assert etire[disque].min() < 0.05 and etire[disque].max() > 0.95
 
-    # Le contraste local garde des valeurs valides
+    # Le contraste local garde des valeurs valides ; sans relief, c'est le contraste automatique
     local = preparer_cible(degrade, 40, contraste="local", noir=0.0)
     assert 0.0 <= local.min() and local.max() <= 1.0
+    plat = preparer_cible(degrade, 40, contraste="local", relief=0.0, noir=0.0)
+    assert plat == pytest.approx(etire)
 
     # `noir` relève le plancher des tons, `gamma` assombrit les tons moyens
     releve = preparer_cible(degrade, 40, contraste="auto", noir=0.3)
@@ -70,5 +72,7 @@ def test_preparer_cible():
         preparer_cible(degrade, 40, gamma=-1)
     with pytest.raises(ValueError):
         preparer_cible(degrade, 40, noir=1.0)
+    with pytest.raises(ValueError):
+        preparer_cible(degrade, 40, relief=2.0)
     with pytest.raises(ValueError):
         preparer_cible(np.zeros((4, 4, 3)), 40)

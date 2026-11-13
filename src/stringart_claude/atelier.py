@@ -98,6 +98,7 @@ def creer(
     *,
     solveur: str = RECOMMANDE,
     contraste: str = "local",
+    relief: float = 0.02,
     gamma: float = 1.0,
     noir: float = 0.3,
     zoom: float = 1.0,
@@ -108,15 +109,15 @@ def creer(
 ) -> Oeuvre:
     """Calcule une pièce à partir d'une image (chemin de fichier ou tableau déjà chargé).
 
-    Les réglages d'image (`contraste`, `gamma`, `noir`, `zoom`, `decalage`) sont ceux de
+    Les réglages d'image (`contraste`, `relief`, `gamma`, `noir`, `zoom`, `decalage`) sont ceux de
     `preparer_cible`. `cordes_max` plafonne le nombre de cordes, donc le temps de montage.
     `suivi(etat, n_coups)` est appelé régulièrement pendant la résolution.
     """
     toile = toile or Toile()
     brute = image if isinstance(image, np.ndarray) else charger_image(image)
     cible = preparer_cible(
-        brute, toile.cote, contraste=contraste, gamma=gamma, noir=noir, zoom=zoom,
-        decalage=decalage,
+        brute, toile.cote, contraste=contraste, relief=relief, gamma=gamma, noir=noir,
+        zoom=zoom, decalage=decalage,
     )  # fmt: skip
     probleme = Probleme(geometrie(toile), cible)
     resultat = resoudre(probleme, solveur, cordes_max=cordes_max, suivi=suivi, **options_solveur)

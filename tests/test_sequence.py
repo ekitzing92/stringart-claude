@@ -36,9 +36,17 @@ def test_sequencer(geo):
     sequence = sequencer(geo, triangle)
     assert len(sequence) == 4 and not est_pas_de_bord(sequence, 48).any()
 
-    # Deux cordes sans clou commun sont reliées par le bord
+    # Deux cordes sans clou commun sont reliées par le bord, au plus court
     isolees = [geo.id_corde[0, 20], geo.id_corde[22, 40]]
-    _verifier(geo, isolees, sequencer(geo, isolees))
+    sequence = sequencer(geo, isolees)
+    _verifier(geo, isolees, sequence)
+    assert len(sequence) - 1 == 2 + 2  # deux cordes, deux pas de bord entre 20 et 22
+
+    # Deux îlots dont tous les clous sont pairs : un aller-retour le long du bord les relie
+    triangles = triangle + [geo.id_corde[2, 18], geo.id_corde[18, 34], geo.id_corde[34, 2]]
+    sequence = sequencer(geo, triangles)
+    _verifier(geo, triangles, sequence)
+    assert est_pas_de_bord(sequence, 48).sum() == 2 * 2  # de 0 à 2 et retour
 
     # Une seule corde, et aucune corde
     assert sorted(sequencer(geo, [geo.id_corde[5, 30]]).tolist()) == [5, 30]

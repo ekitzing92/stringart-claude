@@ -10,6 +10,8 @@ rétablir la parité on s'autorise un geste gratuit pour l'image : **longer le b
 passer d'un clou à son voisin par l'extérieur. Ces pas ne traversent pas la toile. Les clous de
 degré impair sont appariés de proche en proche autour du cercle — sur un cercle, l'appariement
 optimal est l'un des deux appariements de voisins consécutifs — et reliés par ces pas de bord.
+Si les cordes forment plusieurs îlots sans clou commun, un aller-retour le long du bord relie
+les deux plus proches.
 
 Dans une séquence, un pas de bord se reconnaît à deux numéros consécutifs.
 """
@@ -37,22 +39,15 @@ def sequencer(geo: Geometrie, cordes) -> np.ndarray:
     aretes_u = list(geo.clou_a[cordes].tolist())
     aretes_v = list(geo.clou_b[cordes].tolist())
 
-    def ajouter_bord(u: int, v: int) -> None:
-        """Ajoute les pas de bord de u jusqu'à v en tournant dans le sens horaire."""
+    def ajouter_bord(u: int, v: int, sens: int) -> None:
+        """Ajoute les pas de bord de u jusqu'à v (sens +1 : horaire, -1 : antihoraire)."""
         while u != v:
-            suivant = (u + 1) % n
+            suivant = (u + sens) % n
             aretes_u.append(u)
             aretes_v.append(suivant)
             u = suivant
 
-    # 1. Connexité : si les cordes forment plusieurs îlots, un tour complet du bord les relie
-    #    (et ajoute 2 au degré de chaque clou, donc ne change aucune parité).
-    if _n_composantes(n, aretes_u, aretes_v) > 1:
-        ajouter_bord(0, n - 1)
-        aretes_u.append(n - 1)
-        aretes_v.append(0)
-
-    # 2. Parité : apparier les clous impairs voisins. Deux appariements possibles sur un cercle,
+    # 1. Parité : apparier les clous impairs voisins. Deux appariements possibles sur un cercle,
     #    décalés d'un cran ; on garde le plus court, et on laisse ouverte sa plus longue paire :
     #    ses deux clous seront le départ et l'arrivée du fil.
     degre = np.bincount(aretes_u, minlength=n) + np.bincount(aretes_v, minlength=n)
@@ -68,14 +63,29 @@ def sequencer(geo: Geometrie, cordes) -> np.ndarray:
         ouverte = max(range(len(paires)), key=lambda i: paires[i][2])
         for i, (u, v, _) in enumerate(paires):
             if i != ouverte:
-                ajouter_bord(u, v)
+                ajouter_bord(u, v, +1)
         depart = paires[ouverte][0]
+
+    # 2. Connexité : si les arêtes forment plusieurs îlots, on les relie deux à deux par un
+    #    aller-retour le long du bord entre leurs clous les plus proches. Un aller-retour ajoute
+    #    2 au degré de chaque clou traversé : la parité qu'on vient d'établir est conservée.
+    while True:
+        composante = _composantes(n, aretes_u, aretes_v)
+        actifs = np.flatnonzero(composante >= 0)
+        suivants = np.roll(actifs, -1)
+        frontiere = np.flatnonzero(composante[actifs] != composante[suivants])
+        if frontiere.shape[0] == 0:
+            break
+        sauts = (suivants[frontiere] - actifs[frontiere]) % n
+        i = frontiere[int(np.argmin(sauts))]
+        ajouter_bord(int(actifs[i]), int(suivants[i]), +1)
+        ajouter_bord(int(suivants[i]), int(actifs[i]), -1)
 
     return _hierholzer(n, aretes_u, aretes_v, depart)
 
 
-def _n_composantes(n: int, aretes_u: list[int], aretes_v: list[int]) -> int:
-    """Nombre de composantes connexes parmi les clous qui portent au moins une arête."""
+def _composantes(n: int, aretes_u: list[int], aretes_v: list[int]) -> np.ndarray:
+    """Pour chaque clou, le numéro de son îlot (composante connexe), ou -1 s'il n'a pas d'arête."""
     parent = list(range(n))
 
     def racine(x: int) -> int:
@@ -86,7 +96,10 @@ def _n_composantes(n: int, aretes_u: list[int], aretes_v: list[int]) -> int:
 
     for u, v in zip(aretes_u, aretes_v, strict=True):
         parent[racine(u)] = racine(v)
-    return len({racine(x) for x in set(aretes_u) | set(aretes_v)})
+    composante = np.full(n, -1, np.int64)
+    for x in set(aretes_u) | set(aretes_v):
+        composante[x] = racine(x)
+    return composante
 
 
 def _hierholzer(n: int, aretes_u: list[int], aretes_v: list[int], depart: int) -> np.ndarray:

@@ -37,9 +37,15 @@ dev = [
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+# Le .ipynb est produit à partir du .py par jupytext : c'est le .py qu'on vérifie.
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "UP", "B", "NPY"]
+
+[tool.ruff.lint.per-file-ignores]
+# Un carnet importe au fil des cellules, et ses tableaux Markdown ne se replient pas.
+"notebooks/*" = ["E402", "E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -58,6 +58,12 @@ def _options_toile(analyseur: argparse.ArgumentParser) -> None:
         help="mise en tons de la cible (défaut : %(default)s)",
     )
     groupe.add_argument(
+        "--relief",
+        type=float,
+        default=0.02,
+        help="force du contraste local : 0.01 photo chargée, 0.03 visage (défaut : %(default)g)",
+    )
+    groupe.add_argument(
         "--gamma",
         type=float,
         default=1.0,
@@ -86,7 +92,8 @@ def _toile(args: argparse.Namespace) -> Toile:
 
 def _reglages_image(args: argparse.Namespace) -> dict:
     return {
-        "contraste": args.contraste, "gamma": args.gamma, "noir": args.noir,
+        "contraste": args.contraste, "relief": args.relief, "gamma": args.gamma,
+        "noir": args.noir,
         "zoom": args.zoom, "decalage": tuple(args.decalage),
     }  # fmt: skip
 
